@@ -2,10 +2,12 @@ import streamlit as st
 from agent import TicTacToeAgent, train
 import threading
 
-st.title("Tic Tac Toe with RL Agent 🤖")
+st.set_page_config(page_title="Tic Tac Toe AI", page_icon="🎮")
+st.title("Tic Tac Toe with AI Master 🤖")
 st.markdown("""
-You are **O** (circles), AI is **X** (crosses).  
-You always start first. Click to place your O.  
+You are **O** (circle), AI is **X** (cross).  
+You always start first.  
+Click a square to make your move.  
 AI will respond immediately.
 """)
 
@@ -27,7 +29,7 @@ board = st.session_state.board
 agent = st.session_state.agent
 
 def winner(board):
-    wins = [(0,1,2),(3,4,5),(6,7,8),(0,3,6),(1,4,7),(2,5,8),(0,4,8),(2,4,6)]
+    wins = [(0,1,2), (3,4,5), (6,7,8), (0,3,6), (1,4,7), (2,5,8), (0,4,8), (2,4,6)]
     for a, b, c in wins:
         if board[a] == board[b] == board[c] and board[a] != " ":
             return board[a]
@@ -55,18 +57,25 @@ def ai_move():
             st.session_state.turn = "O"
 
 # UI Grid
-cols = st.columns(3)
-for i in range(3):
-    for j in range(3):
-        idx = 3*i + j
-        with cols[j]:
-            if board[idx] == " " and not st.session_state.game_over:
-                if st.button(" ", key=idx):
-                    play_move(idx)
-            else:
-                st.markdown(f"## {board[idx]}")
+def print_board(board):
+    for i in range(3):
+        cols = st.columns(3)
+        for j in range(3):
+            index = 3 * i + j
+            with cols[j]:
+                if board[index] == " " and not st.session_state.game_over:
+                    if st.button(" ", key=f"btn_{index}", help=f"Cell {index}"):
+                        play_move(index)
+                else:
+                    st.markdown(
+                        f"<div style='height: 50px; display: flex; align-items: center; justify-content: center; font-size: 24px;'>{board[index]}</div>",
+                        unsafe_allow_html=True
+                    )
 
-# Game Over
+# Display board
+print_board(board)
+
+# Game Over logic
 if st.session_state.game_over:
     w = winner(board)
     if w:
