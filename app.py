@@ -80,21 +80,9 @@
 #         st.session_state.board = [" "] * 9
 #         st.session_state.turn = "O"
 
+
 import streamlit as st
-# from agent import TicTacToeAgent # Assuming this is in agent.py and correctly defined
-
-# Mock TicTacToeAgent for demonstration if agent.py isn't available
-class TicTacToeAgent:
-    def __init__(self, player):
-        self.player = player
-
-    def select_move(self, board):
-        # Very basic AI: finds the first empty spot
-        for i, val in enumerate(board):
-            if val == " ":
-                return i
-        return -1
-
+from agent import TicTacToeAgent # Assuming this is in agent.py and correctly defined
 
 st.title("Tic Tac Toe with AI master 🤖")
 st.markdown("""
@@ -115,7 +103,7 @@ def play_move(pos):
     if board[pos] == " " and st.session_state.turn == "O":
         board[pos] = "O"
         st.session_state.turn = "X"
-        st.experimental_rerun() # Force a rerun immediately after user move
+        st.rerun() # Changed from st.experimental_rerun()
 
 def winner(board):
     wins = [(0,1,2), (3,4,5), (6,7,8),
@@ -165,12 +153,11 @@ print_board(board)
 if not game_over(board) and st.session_state.turn == "X":
     # Add a short delay to make AI's move more perceptible, if desired
     # import time
-    # time.sleep(0.5)
+    # time.sleep(0.5) # You can uncomment this if you want a slight pause
     move = agent.select_move(board)
     board[move] = "X"
     st.session_state.turn = "O"
-    st.experimental_rerun() # Force a rerun after AI's move to show it immediately
-
+    st.rerun() # Changed from st.experimental_rerun()
 
 if game_over(board):
     w = winner(board)
@@ -181,4 +168,5 @@ if game_over(board):
     if st.button("Play Again"):
         st.session_state.board = [" "] * 9
         st.session_state.turn = "O"
-        st.experimental_rerun() # Force rerun to reset the board immediately
+        st.rerun() # Changed from st.experimental_rerun()
+        
