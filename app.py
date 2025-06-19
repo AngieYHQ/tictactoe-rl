@@ -1,17 +1,39 @@
 import streamlit as st
 from agent import TicTacToeAgent
 
+st.set_page_config(page_title="Tic Tac Toe AI", page_icon="🎮")
+
 st.title("Tic Tac Toe with AI master 🤖")
 st.markdown("""
+<style>
+/* Make buttons bigger with consistent size */
+div.stButton > button {
+    width: 80px !important;
+    height: 80px !important;
+    font-size: 24px !important;
+    border: 1px solid #555 !important;
+    background-color: white !important;
+}
+
+/* Remove border for disabled buttons */
+div.stButton > button[disabled] {
+    border: none !important;
+    background-color: transparent !important;
+    cursor: default !important;
+}
+</style>
+""", unsafe_allow_html=True)
+
+st.markdown("""
 You are **O** (circle, blue), AI is **X** (cross, red).  
-You always start first. Click once to place your O.  
+You always start first. Click a square to place your O.  
 AI will respond immediately.
 """)
 
 if "board" not in st.session_state:
     st.session_state.board = [" "] * 9
     st.session_state.agent = TicTacToeAgent("X")
-    st.session_state.turn = "O"  # User always starts as O
+    st.session_state.turn = "O"  # User starts as O
 
 board = st.session_state.board
 agent = st.session_state.agent
@@ -41,22 +63,20 @@ def print_board(board):
             with cols[j]:
                 symbol = board[idx]
                 if symbol == " ":
-                    # empty square with border
                     clicked = st.button(" ", key=f"btn_{idx}", help=f"Click to place O")
                     if clicked:
                         play_move(idx)
                 else:
-                    # filled square: no border, colored X or O, fixed size
                     color = "#FF4B4B" if symbol == "X" else "#4B9CFF"
                     st.markdown(f"""
                         <div style="
-                            width: 60px;
-                            height: 60px;
+                            width: 80px;
+                            height: 80px;
                             font-size: 32px;
                             font-weight: bold;
                             color: {color};
                             text-align: center;
-                            line-height: 60px;
+                            line-height: 80px;
                             user-select: none;
                         ">
                             {symbol}
