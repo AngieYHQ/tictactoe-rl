@@ -4,7 +4,7 @@ from agent import TicTacToeAgent
 
 st.title("Tic Tac Toe with AI master 🤖")
 st.markdown("""
-You are <span style="color:blue;">**O**</span> (blue) and AI master is <span style="color:red;">**X**</span> (red).<br>
+You are <span style="color:blue;">**O**</span> and AI master is <span style="color:red;">**X**</span>.<br>
 You always start first. Click once to place your O.<br>
 AI will respond within 1 second.
 """, unsafe_allow_html=True)
