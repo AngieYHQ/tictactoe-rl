@@ -2,10 +2,10 @@ import streamlit as st
 import time
 from agent import TicTacToeAgent
 
-# Inject custom CSS for robust 3x3 grid on all screen sizes
+# Inject custom CSS for a robust 3x3 grid using CSS Grid
 st.markdown("""
 <style>
-/* 1. Global App Centering (optional but good for aesthetics) */
+/* 1. Global App Centering */
 .stApp {
     display: flex;
     flex-direction: column;
@@ -14,88 +14,75 @@ st.markdown("""
     padding-bottom: 1rem;
 }
 
-/* 2. CRITICAL: Force Streamlit's column container to NEVER wrap */
-/* This targets the div that wraps the entire row of st.columns for each board row. */
-/* The data-testid can sometimes change with Streamlit versions, but this is common. */
-div[data-testid="stVerticalBlock"] > div[data-testid="stHorizontalBlock"] {
-    display: flex;
-    flex-direction: row; /* Ensure they stay in a row */
-    flex-wrap: nowrap !important; /* THIS IS THE KEY TO PREVENT STACKING */
-    justify-content: center; /* Center the whole row of cells */
-    align-items: center;
-    width: 100%; /* Take full available width of its parent */
-    max-width: 300px; /* Limit overall board width for very large screens */
-    margin: 0 auto; /* Center the board block itself */
-    gap: 0; /* Let cell margins handle spacing, not column gap */
-    box-sizing: border-box; /* Include padding/border in total size calculation */
+/* 2. Style for the Tic-Tac-Toe board container using CSS Grid */
+.tic-tac-toe-grid-container {
+    display: grid;
+    /* Define 3 columns, each taking an equal fraction of available space */
+    grid-template-columns: repeat(3, 1fr);
+    /* Add a gap between grid items (cells) */
+    gap: 5px; /* Adjust gap as needed */
+    /* Set a max width for the entire board to keep it from being too big on large screens */
+    max-width: 300px; /* Adjust this max width as desired for desktop */
+    width: 100%; /* Take full width on smaller screens */
+    margin: 20px auto; /* Center the grid container and add some vertical margin */
+    border: 2px solid #555; /* Optional: Add a border around the entire board */
+    border-radius: 8px; /* Optional: Rounded corners for the board */
+    padding: 5px; /* Optional: Padding inside the board border */
+    box-sizing: border-box; /* Include padding/border in total size */
 }
 
-/* 3. Style for individual column containers */
-/* These are the specific divs that hold each button/symbol (created by st.columns) */
-div[data-testid^="stColumn"] { /* Targets divs whose testid starts with stColumn */
-    flex-shrink: 0; /* Prevent columns from shrinking too much */
-    flex-grow: 0;  /* Prevent columns from growing too much */
-    flex-basis: calc(33.33% - 4px); /* Distribute space evenly, accounting for cell margins */
-    max-width: calc(33.33% - 4px); /* Ensure max width doesn't exceed 1/3 */
+/* 3. Styling for individual game cells */
+.tic-tac-toe-cell {
+    /* Make cells square based on their width within the grid */
+    width: 100%; /* Take full width of its grid column */
+    padding-bottom: 100%; /* Create a square aspect ratio */
+    position: relative; /* For absolute positioning of content */
 
-    display: flex; /* Make column itself a flex container */
-    justify-content: center; /* Center content within each column */
-    align-items: center;
-    padding: 0 !important; /* Remove any default padding from columns */
-    box-sizing: border-box;
-}
-
-/* 4. Styling for the actual game cells (buttons and markdown divs) */
-.stButton > button, .tic-tac-toe-cell {
-    /* Use viewport width (vw) for highly responsive sizing */
-    /* 30vw is roughly 1/3 of the viewport width. Adjust if too big/small. */
-    width: 28vw !important; /* Example: 28% of viewport width */
-    height: 28vw !important; /* Keep it square relative to width */
-
-    /* Ensure minimum and maximum sizes for better control */
-    min-width: 50px !important;
-    min-height: 50px !important;
-    max-width: 80px !important;
-    max-height: 80px !important;
-
-    font-size: 8vw !important; /* Scale font size with viewport */
-    min-font-size: 28px !important;
-    max-font-size: 40px !important;
-
-    font-weight: bold;
-    color: inherit; /* Inherit color from the Python 'style' attribute */
-    text-align: center;
-    line-height: 1; /* Reset line-height, flexbox handles vertical centering */
-    padding: 0 !important;
-    margin: 2px !important; /* Small margin between cells */
+    /* Basic visual styles */
+    background-color: #f0f2f6; /* Light background for cells */
+    border: 1px solid #aaa; /* Cell borders */
     border-radius: 5px;
-    box-sizing: border-box;
-
-    display: flex; /* Use flexbox to perfectly center X/O */
+    display: flex; /* Use flexbox for centering content inside */
     justify-content: center;
     align-items: center;
-    background-color: #f0f2f6; /* Streamlit's default button background */
-    border: 1px solid #ccc; /* Uniform border for grid lines */
     cursor: pointer;
-}
-
-/* Ensure the filled cells also have the correct border and background */
-.tic-tac-toe-cell {
-    background-color: transparent; /* No background fill for symbol cells */
     user-select: none; /* Prevent text selection */
+    font-weight: bold;
 }
 
-/* Specific color overrides for symbols (ensures !important works) */
-.tic-tac-toe-cell[style*="color: rgb(255, 75, 75)"], /* Red for X (Streamlit's internal RGB) */
-.tic-tac-toe-cell[style*="color: #FF4B4B"] { /* Red for X (direct hex) */
-    color: #FF4B4B !important;
+/* Style for the actual content (X or O) inside the cell */
+.tic-tac-toe-cell-content {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 3em; /* Larger font size for X/O */
 }
 
-.tic-tac-toe-cell[style*="color: rgb(75, 156, 255)"], /* Blue for O (Streamlit's internal RGB) */
-.tic-tac-toe-cell[style*="color: #4B9CFF"] { /* Blue for O (direct hex) */
-    color: #4B9CFF !important;
+/* Colors for X and O */
+.tic-tac-toe-cell-content.O {
+    color: #4B9CFF; /* Blue */
+}
+.tic-tac-toe-cell-content.X {
+    color: #FF4B4B; /* Red */
 }
 
+/* Style for disabled cells (when game is over or cell is filled) */
+.tic-tac-toe-cell.disabled {
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+
+/* Adjust font size for very small screens if needed */
+@media (max-width: 360px) {
+    .tic-tac-toe-cell-content {
+        font-size: 2.5em; /* Smaller font for very small screens */
+    }
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -111,7 +98,6 @@ AI will respond within 1 second.
 if "board" not in st.session_state:
     st.session_state.board = [" "] * 9
     try:
-        # Ensure TicTacToeAgent is defined or imported correctly
         st.session_state.agent = TicTacToeAgent("X", q_value_file="agent_q_values_X.json", epsilon=0.0)
     except FileNotFoundError:
         st.error("Error: 'agent_q_values_X.json' not found. Please ensure the AI Q-value file is in the same directory.")
@@ -141,9 +127,12 @@ def game_over(board):
     return " " not in board # It's a draw if no winner and no empty spaces
 
 def play_move(pos):
-    if board[pos] == " " and st.session_state.turn == "O" and not game_over(board):
-        board[pos] = "O"
-        if not game_over(board):
+    # This function needs to be a callback for the HTML buttons
+    # Streamlit buttons automatically trigger reruns, but custom HTML buttons need a trick.
+    # We will use st.session_state to pass the move, then process it on rerun.
+    if st.session_state.turn == "O" and not game_over(st.session_state.board) and st.session_state.board[pos] == " ":
+        st.session_state.board[pos] = "O"
+        if not game_over(st.session_state.board):
             st.session_state.turn = "X"
         st.rerun()
 
@@ -156,51 +145,72 @@ def winner(board):
             return board[a]
     return None
 
-def print_board(board):
+def display_board(board):
     is_game_finished = game_over(board)
+    board_html = ""
+    for i in range(9):
+        symbol = board[i]
+        disabled_class = "disabled" if is_game_finished or symbol != " " else ""
+        content_class = "O" if symbol == "O" else ("X" if symbol == "X" else "")
+        
+        # Use a hidden Streamlit button or st.form to capture clicks from custom HTML divs
+        # Streamlit doesn't directly support callbacks from custom HTML elements.
+        # The best workaround for now is to use hidden buttons or an input field.
+        # A simpler approach is to only use a hidden button if the cell is clickable.
 
-    for i in range(3):
-        # Using st.columns(3, gap="small") as before.
-        # The CSS above will ensure these columns stay in a row.
-        cols = st.columns(3, gap="small")
-        for j in range(3):
-            idx = 3*i + j
-            with cols[j]:
-                symbol = board[idx]
-                if symbol == " ":
-                    clicked = st.button(
-                        " ",
-                        key=f"btn_{idx}",
-                        help=f"Click to place O",
-                        disabled=is_game_finished
-                    )
-                    if clicked:
-                        play_move(idx)
-                else:
-                    color = "#FF4B4B" if symbol == "X" else "#4B9CFF"
-                    st.markdown(f"""
-                        <div class="tic-tac-toe-cell" style="color: {color};">
-                            {symbol}
-                        </div>
-                    """, unsafe_allow_html=True)
+        if symbol == " " and not is_game_finished:
+             # This creates a form for each clickable cell. When the button is clicked,
+             # the form is submitted, and we can retrieve the 'idx' from it.
+             # This is a common pattern for custom HTML interactions.
+            board_html += f"""
+            <div class="tic-tac-toe-cell {disabled_class}">
+                <form action="" method="get" class="tic-tac-toe-cell-content" style="cursor:pointer;">
+                    <input type="hidden" name="action" value="play_move">
+                    <input type="hidden" name="pos" value="{i}">
+                    <button type="submit" style="all: unset; cursor: pointer; width: 100%; height: 100%; border: none; background: transparent;"></button>
+                </form>
+            </div>
+            """
+        else:
+            board_html += f"""
+            <div class="tic-tac-toe-cell {disabled_class}">
+                <div class="tic-tac-toe-cell-content {content_class}">
+                    {symbol if symbol != " " else ""}
+                </div>
+            </div>
+            """
+    
+    st.markdown(f'<div class="tic-tac-toe-grid-container">{board_html}</div>', unsafe_allow_html=True)
 
-print_board(board) # Call this to display the board
+# Check for a move from custom HTML button
+if 'action' in st.query_params and st.query_params['action'] == 'play_move':
+    try:
+        pos = int(st.query_params['pos'])
+        play_move(pos) # Process the move immediately
+        # Clear query params to prevent re-triggering on subsequent reruns
+        st.query_params.clear() 
+        st.rerun() # Rerun to update board and potentially trigger AI
+    except ValueError:
+        pass # Ignore if 'pos' is not an integer
+
+
+display_board(board) # Call this to display the board
 
 # AI's turn
 if not game_over(board) and st.session_state.turn == "X":
-    time.sleep(1) # Reduced delay slightly for quicker testing, adjust as needed
+    time.sleep(1)
     move = agent.select_move(board)
     if move is not None and board[move] == " ":
         board[move] = "X"
-        if not game_over(board): # <--- CHECK GAME OVER AFTER AI MOVE
+        if not game_over(board):
             st.session_state.turn = "O"
         st.rerun()
     else:
         st.error("AI could not make a valid move. This shouldn't happen.")
-        st.session_state.turn = "O" # Pass turn back to user as fallback
+        st.session_state.turn = "O"
 
 
-# --- Game Over Logic (as previously discussed) ---
+# --- Game Over Logic ---
 if game_over(board):
     if st.session_state.get('game_outcome_recorded', False) == False:
         st.session_state.total_games += 1
@@ -236,7 +246,7 @@ user_win_rate = (st.session_state.user_wins / total * 100) if total > 0 else 0
 ai_win_rate = (st.session_state.ai_wins / total * 100) if total > 0 else 0
 draw_rate = (st.session_state.draws / total * 100) if total > 0 else 0
 
-col1, col2, col3 = st.columns(3)
+col1, col2, col3 = st.columns(3) # These statistics columns should be fine as Streamlit handles them well
 with col1:
     st.metric("Games Played", st.session_state.total_games)
 with col2:
