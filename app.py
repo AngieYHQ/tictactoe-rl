@@ -4,10 +4,10 @@ from agent import TicTacToeAgent
 
 st.title("Tic Tac Toe with AI master 🤖")
 st.markdown("""
-You are **O** (blue), AI mater is **X** (red).
-You always start first. Click once to place your O.
+<span style="color:blue;">**O**</span> (blue), AI master is <span style="color:red;">**X**</span> (red).<br>
+You always start first. Click once to place your O.<br>
 AI will respond within 1 second.
-""")
+""", unsafe_allow_html=True)
 
 # Initialize session state for game statistics if not already present
 if "board" not in st.session_state:
