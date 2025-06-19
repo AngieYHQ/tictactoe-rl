@@ -1,5 +1,5 @@
 import streamlit as st
-from agent import TicTacToeAgent
+from agent import TicTacToeAgent, train
 import threading
 
 st.title("Tic Tac Toe with RL Agent 🤖")
@@ -12,15 +12,12 @@ AI will respond immediately.
 # Initialize agent and train if needed
 if "agent" not in st.session_state:
     st.session_state.agent = TicTacToeAgent("X")
-    # Run training in a thread to avoid blocking (optional)
     if len(st.session_state.agent.value) < 1000:
         def train_agent():
-            st.session_state.agent.value = {}
-            st.session_state.agent.history = []
             train(st.session_state.agent, n_games=10000)
         threading.Thread(target=train_agent).start()
 
-# Initialize board and states
+# Initialize game state
 if "board" not in st.session_state:
     st.session_state.board = [" "] * 9
     st.session_state.turn = "O"
@@ -31,7 +28,7 @@ agent = st.session_state.agent
 
 def winner(board):
     wins = [(0,1,2),(3,4,5),(6,7,8),(0,3,6),(1,4,7),(2,5,8),(0,4,8),(2,4,6)]
-    for a,b,c in wins:
+    for a, b, c in wins:
         if board[a] == board[b] == board[c] and board[a] != " ":
             return board[a]
     return None
@@ -39,31 +36,37 @@ def winner(board):
 def game_over(board):
     return winner(board) is not None or " " not in board
 
-def ai_move():
-    if not st.session_state.game_over and st.session_state.turn == "X":
-        move = agent.select_move(board)
-        board[move] = "X"
-        st.session_state.turn = "O"
+def play_move(pos):
+    if st.session_state.turn == "O" and board[pos] == " " and not st.session_state.game_over:
+        board[pos] = "O"
         if game_over(board):
             st.session_state.game_over = True
+        else:
+            st.session_state.turn = "X"
+            ai_move()
 
+def ai_move():
+    if st.session_state.turn == "X" and not st.session_state.game_over:
+        move = agent.select_move(board)
+        board[move] = "X"
+        if game_over(board):
+            st.session_state.game_over = True
+        else:
+            st.session_state.turn = "O"
+
+# UI Grid
 cols = st.columns(3)
 for i in range(3):
     for j in range(3):
         idx = 3*i + j
         with cols[j]:
-            if board[idx] == " ":
+            if board[idx] == " " and not st.session_state.game_over:
                 if st.button(" ", key=idx):
-                    if not st.session_state.game_over and st.session_state.turn == "O":
-                        board[idx] = "O"
-                        st.session_state.turn = "X"
-                        if game_over(board):
-                            st.session_state.game_over = True
-                        else:
-                            ai_move()
+                    play_move(idx)
             else:
                 st.markdown(f"## {board[idx]}")
 
+# Game Over
 if st.session_state.game_over:
     w = winner(board)
     if w:
