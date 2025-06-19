@@ -1,22 +1,28 @@
 import random
+import json
+from pathlib import Path
 
 class TicTacToeAgent:
-    def __init__(self, symbol):
+    def __init__(self, symbol, value_file="agent_values.json"):
         self.symbol = symbol
         self.value = {}
         self.learning_rate = 0.1
         self.history = []
+        self.value_file = Path(value_file)
+        self.load_values()
 
     def select_move(self, board):
         best_score = -float("inf")
-        best_move = None
+        best_moves = []
         for move in self.available_moves(board):
             next_board = self.make_move(board, move, self.symbol)
             score = self.simulate(next_board, self.opponent(self.symbol))
             if score > best_score:
                 best_score = score
-                best_move = move
-        return best_move
+                best_moves = [move]
+            elif score == best_score:
+                best_moves.append(move)
+        return random.choice(best_moves)  # Random among best moves
 
     def simulate(self, board, current_player):
         state = "".join(board)
@@ -50,6 +56,21 @@ class TicTacToeAgent:
             result = -result
         self.history.clear()
 
+    def save_values(self):
+        try:
+            with open(self.value_file, "w") as f:
+                json.dump(self.value, f)
+        except Exception as e:
+            print("Failed to save values:", e)
+
+    def load_values(self):
+        if self.value_file.exists():
+            try:
+                with open(self.value_file, "r") as f:
+                    self.value = json.load(f)
+            except Exception as e:
+                print("Failed to load values:", e)
+
     def available_moves(self, board):
         return [i for i in range(9) if board[i] == " "]
 
@@ -79,4 +100,42 @@ class TicTacToeAgent:
 
     def opponent(self, player):
         return "O" if player == "X" else "X"
-        
+
+
+def train(agent, n_games=10000):
+    import random
+
+    def play_game():
+        board = [" "] * 9
+        current_player = "X"
+        history = {"X": [], "O": []}
+
+        while True:
+            moves = [i for i, v in enumerate(board) if v == " "]
+            if not moves or agent.winner(board) is not None:
+                break
+
+            if current_player == agent.symbol:
+                move = agent.select_move(board)
+            else:
+                move = random.choice(moves)  # opponent plays random
+
+            board = agent.make_move(board, move, current_player)
+            history[current_player].append("".join(board))
+
+            if agent.winner(board) or not any(v == " " for v in board):
+                break
+            current_player = agent.opponent(current_player)
+
+        result = agent.evaluate_result(board, agent.symbol)
+        for state in history[agent.symbol]:
+            if state not in agent.value:
+                agent.value[state] = result
+            else:
+                agent.value[state] += agent.learning_rate * (result - agent.value[state])
+            result = -result
+
+    for _ in range(n_games):
+        play_game()
+
+    agent.save_values()
