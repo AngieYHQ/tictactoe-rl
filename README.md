@@ -11,3 +11,6 @@
 ✅ Value learning (basic reinforcement learning)
 
 ✅ Self-play
+
+## Play the game here:
+https://tictactoemaster.streamlit.app/
