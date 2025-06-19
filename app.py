@@ -14,17 +14,31 @@ agent = st.session_state.agent
 
 def print_board(board):
     for i in range(3):
-        cols = st.columns(3)
+        cols = st.columns(3, gap="small")
         for j in range(3):
-            index = 3*i + j
+            index = 3 * i + j
             with cols[j]:
-                if board[index] == " ":
-                    if st.button(" ", key=index):
-                        if st.session_state.turn == "O":
-                            board[index] = "O"
-                            st.session_state.turn = "X"
+                symbol = board[index]
+                if symbol == " " and not st.session_state.game_over:
+                    if st.button(" ", key=f"btn_{index}", help=f"Click to place O"):
+                        play_move(index)
                 else:
-                    st.markdown(f"## {board[index]}")
+                    color = "#FF4B4B" if symbol == "X" else "#4B9CFF"  # red for X, blue for O
+                    styled = f"""
+                    <button disabled style="
+                        width: 100%;
+                        height: 50px;
+                        font-size: 24px;
+                        font-weight: bold;
+                        background-color: white;
+                        color: {color};
+                        border: 1px solid #DDD;
+                        border-radius: 6px;
+                        cursor: not-allowed;
+                    ">{symbol}</button>
+                    """
+                    st.markdown(styled, unsafe_allow_html=True)
+
 
 print_board(board)
 
