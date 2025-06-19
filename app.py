@@ -6,33 +6,44 @@ st.title("Tic Tac Toe with AI master 🤖")
 st.markdown("""
 You are **O** (circle, blue), AI is **X** (cross, red).
 You always start first. Click once to place your O.
-AI will respond within 1 second after thinking.
+AI will respond immediately.
 """)
 
 # Initialize session state for game statistics if not already present
 if "board" not in st.session_state:
     st.session_state.board = [" "] * 9
-    # Initialize the AI agent, pointing to the saved Q-values
-    # Set epsilon to 0.0 when playing against a human to ensure optimal play (no exploration)
     st.session_state.agent = TicTacToeAgent("X", q_value_file="agent_q_values_X.json", epsilon=0.0)
-    st.session_state.turn = "O"  # User always starts as O
-    
-    # Initialize game statistics
+    st.session_state.turn = "O"
     st.session_state.total_games = 0
     st.session_state.user_wins = 0
     st.session_state.ai_wins = 0
     st.session_state.draws = 0
+    st.session_state.game_outcome_recorded = False # Add this flag if not already there
 
 board = st.session_state.board
 agent = st.session_state.agent
 
+# Helper function to check if the game is over
+def game_over(board):
+    wins = [(0,1,2), (3,4,5), (6,7,8),
+            (0,3,6), (1,4,7), (2,5,8),
+            (0,4,8), (2,4,6)]
+    for a, b, c in wins:
+        if board[a] == board[b] == board[c] and board[a] != " ":
+            return True # There's a winner
+    return " " not in board # It's a draw if no winner and no empty spaces
+
 def play_move(pos):
-    if board[pos] == " " and st.session_state.turn == "O":
+    # Only allow a move if the square is empty, it's the user's turn, AND the game is NOT over
+    if board[pos] == " " and st.session_state.turn == "O" and not game_over(board): # <--- IMPORTANT CHANGE HERE
         board[pos] = "O"
-        st.session_state.turn = "X"
+        # After user's move, check if game is over before changing turn or running AI
+        if not game_over(board): # <--- CHECK GAME OVER AFTER USER MOVE
+            st.session_state.turn = "X" # Pass turn to AI
         st.rerun()
 
 def winner(board):
+    # ... (same winner function as before)
     wins = [(0,1,2), (3,4,5), (6,7,8),
             (0,3,6), (1,4,7), (2,5,8),
             (0,4,8), (2,4,6)]
@@ -41,10 +52,10 @@ def winner(board):
             return board[a]
     return None
 
-def game_over(board):
-    return winner(board) is not None or " " not in board
 
 def print_board(board):
+    is_game_finished = game_over(board) # Check game state once
+
     for i in range(3):
         cols = st.columns(3, gap="small")
         for j in range(3):
@@ -52,12 +63,18 @@ def print_board(board):
             with cols[j]:
                 symbol = board[idx]
                 if symbol == " ":
-                    # empty square with border
-                    clicked = st.button(" ", key=f"btn_{idx}", help=f"Click to place O")
+                    # Empty square
+                    # Disable the button if the game is over
+                    clicked = st.button(
+                        " ",
+                        key=f"btn_{idx}",
+                        help=f"Click to place O",
+                        disabled=is_game_finished # <--- IMPORTANT CHANGE HERE
+                    )
                     if clicked:
-                        play_move(idx)
+                        play_move(idx) # This will now also check game_over internally
                 else:
-                    # filled square: no border, colored X or O, fixed size
+                    # Filled square
                     color = "#FF4B4B" if symbol == "X" else "#4B9CFF"
                     st.markdown(f"""
                         <div style="
@@ -74,39 +91,36 @@ def print_board(board):
                         </div>
                     """, unsafe_allow_html=True)
 
-print_board(board)
+print_board(board) # Call this to display the board
 
 # AI's turn
+# Ensure AI only moves if game is NOT over and it's its turn
 if not game_over(board) and st.session_state.turn == "X":
-    time.sleep(2) # 2-second delay for AI move
+    time.sleep(1.5) # Reduced delay slightly for quicker testing, adjust as needed
     move = agent.select_move(board)
-    # Ensure AI selects a valid move (should always happen with your agent logic)
     if move is not None and board[move] == " ":
         board[move] = "X"
-        st.session_state.turn = "O"
+        if not game_over(board): # <--- CHECK GAME OVER AFTER AI MOVE
+            st.session_state.turn = "O"
         st.rerun()
     else:
-        # Fallback if AI somehow fails to make a valid move (e.g., board full or error)
         st.error("AI could not make a valid move. This shouldn't happen.")
-        st.session_state.turn = "O" # Pass turn back to user
+        st.session_state.turn = "O" # Pass turn back to user as fallback
 
+
+# --- Game Over Logic (as previously discussed) ---
 if game_over(board):
-    # Only update statistics once per game when it's over
-    if st.session_state.get('game_outcome_recorded', False) == False: # Prevents double counting on rerun
+    if st.session_state.get('game_outcome_recorded', False) == False:
         st.session_state.total_games += 1
         w = winner(board)
         if w == "O":
             st.session_state.user_wins += 1
-            st.success("You win! 🎉")
         elif w == "X":
             st.session_state.ai_wins += 1
-            st.error("AI Master wins! 😈")
         else:
             st.session_state.draws += 1
-            st.info("It's a draw! 🤝")
-        st.session_state.game_outcome_recorded = True # Mark outcome as recorded
+        st.session_state.game_outcome_recorded = True
 
-    # Display game outcome message after recording
     w = winner(board)
     if w == "O":
         st.success("You win! 🎉")
@@ -118,14 +132,13 @@ if game_over(board):
     if st.button("Play Again"):
         st.session_state.board = [" "] * 9
         st.session_state.turn = "O"
-        st.session_state.game_outcome_recorded = False # Reset for new game
+        st.session_state.game_outcome_recorded = False
         st.rerun()
 
 # --- Display Statistics ---
 st.markdown("---")
 st.subheader("Game Statistics")
 
-# Calculate rates
 total = st.session_state.total_games
 user_win_rate = (st.session_state.user_wins / total * 100) if total > 0 else 0
 ai_win_rate = (st.session_state.ai_wins / total * 100) if total > 0 else 0
@@ -141,11 +154,10 @@ with col3:
 
 st.metric("Draws", f"{st.session_state.draws} ({draw_rate:.1f}%)")
 
-# Add a reset statistics button
 if st.button("Reset Statistics", help="Clear all win/loss/draw counts"):
     st.session_state.total_games = 0
     st.session_state.user_wins = 0
     st.session_state.ai_wins = 0
     st.session_state.draws = 0
-    st.session_state.game_outcome_recorded = False # Ensure this is also reset
+    st.session_state.game_outcome_recorded = False
     st.rerun()
