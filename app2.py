@@ -2,7 +2,65 @@ import streamlit as st
 import time
 from agent import TicTacToeAgent
 
-st.set_page_config(layout="centered", initial_sidebar_state="collapsed") # Good starting point for mobile
+# Inject custom CSS for better responsiveness and centering
+st.markdown("""
+<style>
+/* Center the main content */
+.reportview-container .main {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding-top: 1rem; /* Adjust as needed */
+}
+
+/* Ensure columns within the board have some flex properties if needed */
+.st-emotion-cache-nahz7x { /* This is a Streamlit class for columns, might change with versions */
+    display: flex;
+    justify-content: center; /* Center content within columns */
+    align-items: center;
+}
+
+/* Specific styling for the game cells (buttons and markdown divs) */
+.stButton>button, .tic-tac-toe-cell {
+    width: 80px !important; /* Start with a larger fixed size */
+    height: 80px !important;
+    font-size: 40px !important; /* Adjust font size */
+    line-height: 80px !important; /* Vertically center text */
+    padding: 0 !important; /* Remove button padding */
+    margin: 2px !important; /* Small margin between cells */
+    display: flex; /* Use flexbox for centering content within cell */
+    justify-content: center;
+    align-items: center;
+}
+
+/* For smaller screens (e.g., iPhones in portrait) */
+@media (max-width: 400px) { /* Adjust this breakpoint based on your testing */
+    .stButton>button, .tic-tac-toe-cell {
+        width: 60px !important; /* Reduce size for very small screens */
+        height: 60px !important;
+        font-size: 32px !important;
+        line-height: 60px !important;
+    }
+}
+
+/* Another breakpoint for even smaller phones */
+@media (max-width: 320px) {
+    .stButton>button, .tic-tac-toe-cell {
+        width: 50px !important;
+        height: 50px !important;
+        font-size: 28px !important;
+        line-height: 50px !important;
+    }
+}
+
+/* Custom CSS to remove extra padding around the board itself if it's causing issues */
+div[data-testid="stVerticalBlock"] div[data-testid="stHorizontalBlock"] {
+    justify-content: center; /* Center the board itself if columns are centered */
+}
+
+</style>
+""", unsafe_allow_html=True)
+
 
 st.title("Tic Tac Toe with AI master 🤖")
 st.markdown("""
@@ -14,9 +72,8 @@ AI will respond within 1 second.
 # Initialize session state for game statistics if not already present
 if "board" not in st.session_state:
     st.session_state.board = [" "] * 9
-    # Ensure the agent is initialized once. For a real deployed app, consider lazy loading or singleton pattern.
-    if "agent" not in st.session_state:
-        st.session_state.agent = TicTacToeAgent("X", q_value_file="agent_q_values_X.json", epsilon=0.0)
+    # Ensure TicTacToeAgent is defined or imported correctly
+    st.session_state.agent = TicTacToeAgent("X", q_value_file="agent_q_values_X.json", epsilon=0.0)
     st.session_state.turn = "O"
     st.session_state.total_games = 0
     st.session_state.user_wins = 0
@@ -37,6 +94,13 @@ def game_over(board):
             return True # There's a winner
     return " " not in board # It's a draw if no winner and no empty spaces
 
+def play_move(pos):
+    if board[pos] == " " and st.session_state.turn == "O" and not game_over(board):
+        board[pos] = "O"
+        if not game_over(board):
+            st.session_state.turn = "X"
+        st.rerun()
+
 def winner(board):
     wins = [(0,1,2), (3,4,5), (6,7,8),
             (0,3,6), (1,4,7), (2,5,8),
@@ -46,120 +110,50 @@ def winner(board):
             return board[a]
     return None
 
-def play_move(pos):
-    # Only allow a move if the square is empty, it's the user's turn, AND the game is NOT over
-    if board[pos] == " " and st.session_state.turn == "O" and not game_over(board):
-        board[pos] = "O"
-        # After user's move, check if game is over before changing turn or running AI
-        if not game_over(board):
-            st.session_state.turn = "X" # Pass turn to AI
-        st.rerun()
-
 def print_board(board):
     is_game_finished = game_over(board)
 
-    # Use a single column for the board on small screens, or adjust sizing
-    # We'll use custom CSS to try and force a better square look
-    st.markdown(
-        """
-        <style>
-        .stButton button {
-            width: 100%;
-            height: 100%;
-            padding: 0;
-            font-size: 48px; /* Larger font for better tap target */
-            font-weight: bold;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            aspect-ratio: 1 / 1; /* Keep buttons square */
-        }
-        .board-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr); /* 3 columns, equal width */
-            gap: 5px; /* Small gap between cells */
-            max-width: 300px; /* Max width for the board to prevent overstretching on large screens */
-            margin: auto; /* Center the board */
-        }
-        .board-cell {
-            width: 100%;
-            aspect-ratio: 1 / 1; /* Keep cells square */
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-size: 48px;
-            font-weight: bold;
-            user-select: none;
-            background-color: #f0f2f6; /* A subtle background for empty cells */
-            border-radius: 5px; /* Slightly rounded corners */
-        }
-        .symbol-O {
-            color: #4B9CFF; /* Blue for O */
-        }
-        .symbol-X {
-            color: #FF4B4B; /* Red for X */
-        }
-        </style>
-        """, unsafe_allow_html=True
-    )
-
-    # Instead of st.columns, we'll render the board using pure HTML/CSS grid for better control
-    st.markdown('<div class="board-grid">', unsafe_allow_html=True)
-    for i in range(9):
-        symbol = board[i]
-        if symbol == " ":
-            # Empty square: Use a button
-            st.markdown(
-                f"""
-                <div class="board-cell">
-                    <button id="button_{i}" style="width:100%; height:100%; font-size: 48px; font-weight: bold; {"opacity: 0.5; cursor: not-allowed;" if is_game_finished else ""}" onclick="
-                        const el = document.getElementById('button_{i}');
-                        if (el.innerText === ' ' && !{str(is_game_finished).lower()}) {{
-                            Streamlit.setComponentValue('{i}');
-                            // Temporarily disable the button to prevent double-clicks
-                            el.disabled = true;
-                            el.style.opacity = '0.5';
-                            el.style.cursor = 'not-allowed';
-                        }}
-                    ">{symbol}</button>
-                </div>
-                """,
-                unsafe_allow_html=True
-            )
-            # This is a trick: We use an invisible Streamlit button to capture clicks
-            # and then use JavaScript to call `setComponentValue` which triggers a rerun.
-            # We pass the index of the clicked cell.
-            if st.button(" ", key=f"hidden_btn_{i}", help="Click to place O", disabled=is_game_finished):
-                play_move(i)
-        else:
-            # Filled square: Display the symbol with color
-            color_class = "symbol-X" if symbol == "X" else "symbol-O"
-            st.markdown(
-                f"""
-                <div class="board-cell {color_class}">
-                    {symbol}
-                </div>
-                """,
-                unsafe_allow_html=True
-            )
-    st.markdown('</div>', unsafe_allow_html=True)
-
+    # Use a container to center the entire board
+    # This div will ensure the three columns stay grouped and centered
+    st.markdown('<div class="tic-tac-toe-board-container">', unsafe_allow_html=True)
+    for i in range(3):
+        cols = st.columns(3, gap="small")
+        for j in range(3):
+            idx = 3*i + j
+            with cols[j]:
+                symbol = board[idx]
+                if symbol == " ":
+                    clicked = st.button(
+                        " ",
+                        key=f"btn_{idx}",
+                        help=f"Click to place O",
+                        disabled=is_game_finished
+                    )
+                    if clicked:
+                        play_move(idx)
+                else:
+                    color = "#FF4B4B" if symbol == "X" else "#4B9CFF"
+                    st.markdown(f"""
+                        <div class="tic-tac-toe-cell" style="color: {color};">
+                            {symbol}
+                        </div>
+                    """, unsafe_allow_html=True)
+    st.markdown('</div>', unsafe_allow_html=True) # Close the container div
 
 print_board(board)
 
 # AI's turn
 if not game_over(board) and st.session_state.turn == "X":
-    with st.spinner("AI thinking..."): # Provide visual feedback while AI thinks
-        time.sleep(1) # Reduced delay slightly for quicker testing, adjust as needed
-        move = agent.select_move(board)
-        if move is not None and board[move] == " ":
-            board[move] = "X"
-            if not game_over(board):
-                st.session_state.turn = "O"
-            st.rerun()
-        else:
-            st.error("AI could not make a valid move. This shouldn't happen.")
-            st.session_state.turn = "O" # Pass turn back to user as fallback
+    time.sleep(1)
+    move = agent.select_move(board)
+    if move is not None and board[move] == " ":
+        board[move] = "X"
+        if not game_over(board):
+            st.session_state.turn = "O"
+        st.rerun()
+    else:
+        st.error("AI could not make a valid move. This shouldn't happen.")
+        st.session_state.turn = "O"
 
 
 # --- Game Over Logic ---
@@ -183,18 +177,11 @@ if game_over(board):
     else:
         st.info("It's a draw! 🤝")
 
-    # Use a container for game over buttons to ensure they stack well
-    st.markdown("---")
-    st.subheader("Game Actions")
-    col_restart, col_dummy = st.columns([0.6, 0.4]) # Give "Play Again" more space
-    with col_restart:
-        if st.button("Play Again", key="play_again_btn"):
-            st.session_state.board = [" "] * 9
-            st.session_state.turn = "O"
-            st.session_state.game_outcome_recorded = False
-            st.rerun()
-    with col_dummy:
-        pass # Empty column for spacing if needed
+    if st.button("Play Again"):
+        st.session_state.board = [" "] * 9
+        st.session_state.turn = "O"
+        st.session_state.game_outcome_recorded = False
+        st.rerun()
 
 # --- Display Statistics ---
 st.markdown("---")
@@ -205,17 +192,17 @@ user_win_rate = (st.session_state.user_wins / total * 100) if total > 0 else 0
 ai_win_rate = (st.session_state.ai_wins / total * 100) if total > 0 else 0
 draw_rate = (st.session_state.draws / total * 100) if total > 0 else 0
 
-# Use columns for statistics, but they will naturally stack on small screens
-stat_col1, stat_col2 = st.columns(2)
-with stat_col1:
+col1, col2, col3 = st.columns(3)
+with col1:
     st.metric("Games Played", st.session_state.total_games)
+with col2:
     st.metric("Your Wins (O)", f"{st.session_state.user_wins} ({user_win_rate:.1f}%)")
-with stat_col2:
+with col3:
     st.metric("AI Wins (X)", f"{st.session_state.ai_wins} ({ai_win_rate:.1f}%)")
-    st.metric("Draws", f"{st.session_state.draws} ({draw_rate:.1f}%)")
 
-st.markdown("---")
-if st.button("Reset Statistics", help="Clear all win/loss/draw counts", key="reset_stats_btn"):
+st.metric("Draws", f"{st.session_state.draws} ({draw_rate:.1f}%)")
+
+if st.button("Reset Statistics", help="Clear all win/loss/draw counts"):
     st.session_state.total_games = 0
     st.session_state.user_wins = 0
     st.session_state.ai_wins = 0
