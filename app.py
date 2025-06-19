@@ -35,7 +35,7 @@ def game_over(board):
 
 def print_board(board):
     for i in range(3):
-        cols = st.columns(3, gap="big")
+        cols = st.columns(3, gap="none")
         for j in range(3):
             idx = 3*i + j
             with cols[j]:
