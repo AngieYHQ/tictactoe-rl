@@ -59,22 +59,17 @@ def ai_move():
 # UI Grid
 def print_board(board):
     for i in range(3):
-        cols = st.columns(3)
+        cols = st.columns(3, gap="small")
         for j in range(3):
             index = 3 * i + j
             with cols[j]:
-                if not st.session_state.game_over and board[index] == " ":
-                    if st.button(" ", key=f"btn_{index}", help=f"Cell {index}"):
+                symbol = board[index]
+                if not st.session_state.game_over and symbol == " ":
+                    if st.button(" ", key=f"btn_{index}", help=f"Click to place O", args=(index,)):
                         play_move(index)
                 else:
-                    # Use disabled button to ensure alignment and consistent size
-                    st.button(
-                        board[index],
-                        key=f"filled_{index}",
-                        disabled=True,
-                        help=f"Cell {index}"
-                    )
-
+                    # Keep layout consistent with a disabled button
+                    st.button(symbol, key=f"filled_{index}", disabled=True)
 
 # Display board
 print_board(board)
@@ -90,4 +85,4 @@ if st.session_state.game_over:
         st.session_state.board = [" "] * 9
         st.session_state.turn = "O"
         st.session_state.game_over = False
-        st.experimental_rerun()
+        # st.experimental_rerun()
