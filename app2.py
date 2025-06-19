@@ -2,16 +2,16 @@ import streamlit as st
 import time
 from agent import TicTacToeAgent
 
-# Inject custom CSS for a robust 3x3 grid using CSS Grid
+# Inject custom CSS for a robust 3x3 grid using CSS Grid, optimized for small screens
 st.markdown("""
 <style>
-/* 1. Global App Centering */
+/* 1. Global App Centering (optional but good for aesthetics) */
 .stApp {
     display: flex;
     flex-direction: column;
     align-items: center; /* Center content horizontally */
-    padding-top: 1rem;
-    padding-bottom: 1rem;
+    padding-top: 0.5rem; /* Reduced padding */
+    padding-bottom: 0.5rem; /* Reduced padding */
 }
 
 /* 2. Style for the Tic-Tac-Toe board container using CSS Grid */
@@ -20,14 +20,14 @@ st.markdown("""
     /* Define 3 columns, each taking an equal fraction of available space */
     grid-template-columns: repeat(3, 1fr);
     /* Add a gap between grid items (cells) */
-    gap: 5px; /* Adjust gap as needed */
+    gap: 3px; /* Slightly reduced gap for more compactness */
     /* Set a max width for the entire board to keep it from being too big on large screens */
-    max-width: 300px; /* Adjust this max width as desired for desktop */
-    width: 100%; /* Take full width on smaller screens */
-    margin: 20px auto; /* Center the grid container and add some vertical margin */
+    max-width: 250px; /* Reduced max width for the whole board */
+    width: 95vw; /* Take 95% of viewport width to allow some side padding */
+    margin: 10px auto; /* Reduced vertical margin, center horizontally */
     border: 2px solid #555; /* Optional: Add a border around the entire board */
     border-radius: 8px; /* Optional: Rounded corners for the board */
-    padding: 5px; /* Optional: Padding inside the board border */
+    padding: 3px; /* Optional: Reduced padding inside the board border */
     box-sizing: border-box; /* Include padding/border in total size */
 }
 
@@ -60,7 +60,7 @@ st.markdown("""
     display: flex;
     justify-content: center;
     align-items: center;
-    font-size: 3em; /* Larger font size for X/O */
+    font-size: 2.5em; /* Slightly smaller font size for X/O */
 }
 
 /* Colors for X and O */
@@ -77,10 +77,16 @@ st.markdown("""
     opacity: 0.7;
 }
 
-/* Adjust font size for very small screens if needed */
-@media (max-width: 360px) {
+/* Specific media query for extremely small screens (e.g., iPhone SE 1st Gen) */
+@media (max-width: 320px) {
+    .tic-tac-toe-grid-container {
+        max-width: 220px; /* Further reduce max width for smallest screens */
+        width: 98vw; /* Take up even more of the available viewport width */
+        gap: 2px; /* Even smaller gap */
+        padding: 2px; /* Even smaller padding */
+    }
     .tic-tac-toe-cell-content {
-        font-size: 2.5em; /* Smaller font for very small screens */
+        font-size: 2em; /* Ensure font fits even if cells are tiny */
     }
 }
 </style>
@@ -127,14 +133,13 @@ def game_over(board):
     return " " not in board # It's a draw if no winner and no empty spaces
 
 def play_move(pos):
-    # This function needs to be a callback for the HTML buttons
-    # Streamlit buttons automatically trigger reruns, but custom HTML buttons need a trick.
-    # We will use st.session_state to pass the move, then process it on rerun.
     if st.session_state.turn == "O" and not game_over(st.session_state.board) and st.session_state.board[pos] == " ":
         st.session_state.board[pos] = "O"
         if not game_over(st.session_state.board):
             st.session_state.turn = "X"
-        st.rerun()
+        # We need to rerun after updating the board, but also clear query params
+        # This will be handled after the `display_board` call
+        st.session_state._trigger_rerun_after_move = True # Custom flag
 
 def winner(board):
     wins = [(0,1,2), (3,4,5), (6,7,8),
@@ -153,15 +158,8 @@ def display_board(board):
         disabled_class = "disabled" if is_game_finished or symbol != " " else ""
         content_class = "O" if symbol == "O" else ("X" if symbol == "X" else "")
         
-        # Use a hidden Streamlit button or st.form to capture clicks from custom HTML divs
-        # Streamlit doesn't directly support callbacks from custom HTML elements.
-        # The best workaround for now is to use hidden buttons or an input field.
-        # A simpler approach is to only use a hidden button if the cell is clickable.
-
         if symbol == " " and not is_game_finished:
-             # This creates a form for each clickable cell. When the button is clicked,
-             # the form is submitted, and we can retrieve the 'idx' from it.
-             # This is a common pattern for custom HTML interactions.
+             # Use a form to capture clicks from custom HTML divs
             board_html += f"""
             <div class="tic-tac-toe-cell {disabled_class}">
                 <form action="" method="get" class="tic-tac-toe-cell-content" style="cursor:pointer;">
@@ -182,14 +180,14 @@ def display_board(board):
     
     st.markdown(f'<div class="tic-tac-toe-grid-container">{board_html}</div>', unsafe_allow_html=True)
 
-# Check for a move from custom HTML button
+# Process clicks from custom HTML buttons
 if 'action' in st.query_params and st.query_params['action'] == 'play_move':
     try:
         pos = int(st.query_params['pos'])
-        play_move(pos) # Process the move immediately
-        # Clear query params to prevent re-triggering on subsequent reruns
-        st.query_params.clear() 
-        st.rerun() # Rerun to update board and potentially trigger AI
+        play_move(pos)
+        # Clear query params ONLY if a move was successfully played to prevent infinite loops
+        st.query_params.clear()
+        st.rerun()
     except ValueError:
         pass # Ignore if 'pos' is not an integer
 
@@ -246,7 +244,7 @@ user_win_rate = (st.session_state.user_wins / total * 100) if total > 0 else 0
 ai_win_rate = (st.session_state.ai_wins / total * 100) if total > 0 else 0
 draw_rate = (st.session_state.draws / total * 100) if total > 0 else 0
 
-col1, col2, col3 = st.columns(3) # These statistics columns should be fine as Streamlit handles them well
+col1, col2, col3 = st.columns(3)
 with col1:
     st.metric("Games Played", st.session_state.total_games)
 with col2:
