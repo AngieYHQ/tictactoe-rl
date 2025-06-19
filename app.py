@@ -70,7 +70,7 @@ print_board(board)
 # AI's turn
 if not game_over(board) and st.session_state.turn == "X":
     # Add a 2-second delay here
-    time.sleep(2) # <--- ADDED THIS LINE
+    time.sleep(1) # <--- ADDED THIS LINE
     move = agent.select_move(board)
     board[move] = "X"
     st.session_state.turn = "O"
