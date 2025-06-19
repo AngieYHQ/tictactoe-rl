@@ -79,3 +79,4 @@ class TicTacToeAgent:
 
     def opponent(self, player):
         return "O" if player == "X" else "X"
+        
