@@ -81,17 +81,41 @@
 #         st.session_state.turn = "O"
 
 import streamlit as st
-from agent import TicTacToeAgent
+# from agent import TicTacToeAgent # Assuming this is in agent.py and correctly defined
 
-# Initialize session state on first run
+# Mock TicTacToeAgent for demonstration if agent.py isn't available
+class TicTacToeAgent:
+    def __init__(self, player):
+        self.player = player
+
+    def select_move(self, board):
+        # Very basic AI: finds the first empty spot
+        for i, val in enumerate(board):
+            if val == " ":
+                return i
+        return -1
+
+
+st.title("Tic Tac Toe with AI master 🤖")
+st.markdown("""
+You are **O** (circle, blue), AI is **X** (cross, red).
+You always start first. Click once to place your O.
+AI will respond immediately.
+""")
+
 if "board" not in st.session_state:
     st.session_state.board = [" "] * 9
-    st.session_state.turn = "O"
-    st.session_state.game_over = False
     st.session_state.agent = TicTacToeAgent("X")
+    st.session_state.turn = "O"  # User always starts as O
 
 board = st.session_state.board
 agent = st.session_state.agent
+
+def play_move(pos):
+    if board[pos] == " " and st.session_state.turn == "O":
+        board[pos] = "O"
+        st.session_state.turn = "X"
+        st.experimental_rerun() # Force a rerun immediately after user move
 
 def winner(board):
     wins = [(0,1,2), (3,4,5), (6,7,8),
@@ -105,54 +129,48 @@ def winner(board):
 def game_over(board):
     return winner(board) is not None or " " not in board
 
-def play_ai_move():
-    if st.session_state.turn == "X" and not st.session_state.game_over:
-        move = agent.select_move(board)
-        board[move] = "X"
-        if game_over(board):
-            st.session_state.game_over = True
-        else:
-            st.session_state.turn = "O"
-
-def play_user_move(pos):
-    if board[pos] == " " and st.session_state.turn == "O" and not st.session_state.game_over:
-        board[pos] = "O"
-        if game_over(board):
-            st.session_state.game_over = True
-        else:
-            st.session_state.turn = "X"
-            play_ai_move()
-
 def print_board(board):
     for i in range(3):
-        cols = st.columns(3, gap="none")
+        cols = st.columns(3, gap="small")
         for j in range(3):
-            idx = 3 * i + j
+            idx = 3*i + j
             with cols[j]:
                 symbol = board[idx]
                 if symbol == " ":
-                    if st.button(" ", key=f"btn_{idx}"):
-                        play_user_move(idx)
+                    # empty square with border
+                    clicked = st.button(" ", key=f"btn_{idx}", help=f"Click to place O")
+                    if clicked:
+                        play_move(idx)
                 else:
+                    # filled square: no border, colored X or O, fixed size
                     color = "#FF4B4B" if symbol == "X" else "#4B9CFF"
                     st.markdown(f"""
                         <div style="
-                            width: 80px;
-                            height: 80px;
+                            width: 60px;
+                            height: 60px;
                             font-size: 32px;
                             font-weight: bold;
                             color: {color};
                             text-align: center;
-                            line-height: 80px;
+                            line-height: 60px;
                             user-select: none;
-                            border: 1px solid #ddd;
-                            box-sizing: border-box;
                         ">
                             {symbol}
                         </div>
                     """, unsafe_allow_html=True)
 
 print_board(board)
+
+# AI's turn
+if not game_over(board) and st.session_state.turn == "X":
+    # Add a short delay to make AI's move more perceptible, if desired
+    # import time
+    # time.sleep(0.5)
+    move = agent.select_move(board)
+    board[move] = "X"
+    st.session_state.turn = "O"
+    st.experimental_rerun() # Force a rerun after AI's move to show it immediately
+
 
 if game_over(board):
     w = winner(board)
@@ -163,5 +181,4 @@ if game_over(board):
     if st.button("Play Again"):
         st.session_state.board = [" "] * 9
         st.session_state.turn = "O"
-        st.session_state.game_over = False
-
+        st.experimental_rerun() # Force rerun to reset the board immediately
