@@ -4,9 +4,9 @@ from agent import TicTacToeAgent
 
 st.title("Tic Tac Toe with AI master 🤖")
 st.markdown("""
-You are **O** (circle, blue), AI is **X** (cross, red).
+You are **O** (blue), AI mater is **X** (red).
 You always start first. Click once to place your O.
-AI will respond immediately.
+AI will respond within 1 second.
 """)
 
 # Initialize session state for game statistics if not already present
@@ -96,7 +96,7 @@ print_board(board) # Call this to display the board
 # AI's turn
 # Ensure AI only moves if game is NOT over and it's its turn
 if not game_over(board) and st.session_state.turn == "X":
-    time.sleep(1.5) # Reduced delay slightly for quicker testing, adjust as needed
+    time.sleep(1) # Reduced delay slightly for quicker testing, adjust as needed
     move = agent.select_move(board)
     if move is not None and board[move] == " ":
         board[move] = "X"
