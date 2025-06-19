@@ -44,24 +44,12 @@ class TicTacToeAgent:
         self.value[state] = best_score
         return best_score
 
-    def remember(self, board):
-        self.history.append("".join(board))
-
-    def learn(self, result):
-        for state in reversed(self.history):
-            if state not in self.value:
-                self.value[state] = result
-            else:
-                self.value[state] += self.learning_rate * (result - self.value[state])
-            result = -result
-        self.history.clear()
-
     def save_values(self):
         try:
             with open(self.value_file, "w") as f:
                 json.dump(self.value, f)
         except Exception as e:
-            print("Failed to save values:", e)
+            print("Error saving values:", e)
 
     def load_values(self):
         if self.value_file.exists():
@@ -69,7 +57,7 @@ class TicTacToeAgent:
                 with open(self.value_file, "r") as f:
                     self.value = json.load(f)
             except Exception as e:
-                print("Failed to load values:", e)
+                print("Error loading values:", e)
 
     def available_moves(self, board):
         return [i for i in range(9) if board[i] == " "]
@@ -83,7 +71,8 @@ class TicTacToeAgent:
         return self.winner(board) is not None or " " not in board
 
     def winner(self, board):
-        wins = [(0,1,2), (3,4,5), (6,7,8), (0,3,6), (1,4,7), (2,5,8), (0,4,8), (2,4,6)]
+        wins = [(0,1,2), (3,4,5), (6,7,8), (0,3,6),
+                (1,4,7), (2,5,8), (0,4,8), (2,4,6)]
         for a, b, c in wins:
             if board[a] == board[b] == board[c] and board[a] != " ":
                 return board[a]
@@ -101,10 +90,8 @@ class TicTacToeAgent:
     def opponent(self, player):
         return "O" if player == "X" else "X"
 
-
+# Training function
 def train(agent, n_games=10000):
-    import random
-
     def play_game():
         board = [" "] * 9
         current_player = "X"
@@ -118,7 +105,7 @@ def train(agent, n_games=10000):
             if current_player == agent.symbol:
                 move = agent.select_move(board)
             else:
-                move = random.choice(moves)  # opponent plays random
+                move = random.choice(moves)  # opponent plays randomly
 
             board = agent.make_move(board, move, current_player)
             history[current_player].append("".join(board))
