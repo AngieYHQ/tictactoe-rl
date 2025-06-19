@@ -63,14 +63,18 @@ def print_board(board):
         for j in range(3):
             index = 3 * i + j
             with cols[j]:
-                if board[index] == " " and not st.session_state.game_over:
+                if not st.session_state.game_over and board[index] == " ":
                     if st.button(" ", key=f"btn_{index}", help=f"Cell {index}"):
                         play_move(index)
                 else:
-                    st.markdown(
-                        f"<div style='height: 50px; display: flex; align-items: center; justify-content: center; font-size: 24px;'>{board[index]}</div>",
-                        unsafe_allow_html=True
+                    # Use disabled button to ensure alignment and consistent size
+                    st.button(
+                        board[index],
+                        key=f"filled_{index}",
+                        disabled=True,
+                        help=f"Cell {index}"
                     )
+
 
 # Display board
 print_board(board)
