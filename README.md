@@ -4,7 +4,7 @@
 
 ✅ Uses learning to get smarter over time
 
-## Objective: fully runnable Python script of a simplified AlphaGo-style Tic Tac Toe agent that uses:
+## Objective: Create a fully runnable Tic Tac Toe agent (simplified AlphaGo-style) that uses:
 
 ✅ Planning (simulating future moves)
 
