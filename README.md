@@ -14,5 +14,5 @@ Inspired by the captivating AlphaGo documentary, this mini-game project was deve
 
 ✅ Self-play
 
-## Play the game here:
+## Play the game here (only work on desktop/laptop for now, adjusting to mobile web soon):
 https://tictactoemaster.streamlit.app/
